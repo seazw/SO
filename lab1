@@ -1,0 +1,104 @@
+import java.awt.Toolkit;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
+
+/**
+ * Lucrare de laborator 1
+ * Tema: Elaborarea unui mecanism de planificare a activitatii proceselor
+ *       utilizand Timer-ul.
+ *
+ * Aplicatia demonstreaza cele 3 moduri de planificare cerute in sarcina
+ * lucrarii, folosind clasele Timer si TimerTask:
+ *
+ *   1. TimerInterval  -> reactioneaza dupa un anumit INTERVAL de timp (delay)
+ *   2. TimerLaOra     -> reactioneaza la un anumit MOMENT DE TIMP exact
+ *   3. TimerPeriodic  -> reactioneaza repetat, cu o PERIOADA indicata
+ */
+public class TimerDemo {
+
+    public static void main(String[] args) {
+
+        // ------------------------------------------------------------
+        // 1) Timer care reactioneaza dupa un anumit INTERVAL de timp
+        //    (schedule(task, delay) -> o singura executie, dupa "delay" ms)
+        // ------------------------------------------------------------
+        final long intervalMs = 3000; // reactioneaza dupa 3 secunde
+        Timer timerInterval = new Timer("TimerInterval");
+        timerInterval.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println("[Interval] Au trecut " + (intervalMs / 1000)
+                        + " secunde de la pornirea aplicatiei.");
+                beepSafe();
+            }
+        }, intervalMs);
+
+        // ------------------------------------------------------------
+        // 2) Timer care reactioneaza la un ANUMIT MOMENT DE TIMP exact
+        //    (schedule(task, Date) -> executie la o data/ora precisa)
+        // ------------------------------------------------------------
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.SECOND, 8); // peste 8 secunde fata de acum
+        final Date momentExecutie = calendar.getTime();
+
+        Timer timerLaOra = new Timer("TimerLaOra");
+        timerLaOra.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println("[La ora fixa] Executie declansata la momentul: "
+                        + momentExecutie);
+            }
+        }, momentExecutie);
+
+        // ------------------------------------------------------------
+        // 3) Timer care reactioneaza cu o PERIOADA indicata
+        //    (scheduleAtFixedRate -> executii repetate la interval fix)
+        // ------------------------------------------------------------
+        final long delayInitial = 0;
+        final long perioada = 1000; // se repeta la fiecare 1 secunda
+
+        Timer timerPeriodic = new Timer("TimerPeriodic");
+        timerPeriodic.scheduleAtFixedRate(new TimerTask() {
+            int contor = 0;
+
+            @Override
+            public void run() {
+                contor++;
+                System.out.println("[Periodic] Executia numarul " + contor);
+
+                if (contor >= 5) {
+                    System.out.println("[Periodic] S-au efectuat 5 executii, timer-ul se opreste.");
+                    this.cancel();
+                }
+            }
+        }, delayInitial, perioada);
+
+        System.out.println("Aplicatia a pornit. Cele 3 timere au fost planificate...");
+
+        // ------------------------------------------------------------
+        // Timer auxiliar: opreste aplicatia dupa ce toate timerele
+        // de mai sus si-au terminat treaba (10 secunde sunt suficiente)
+        // ------------------------------------------------------------
+        new Timer("TimerOprireAplicatie").schedule(new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println("Toate timerele si-au finalizat executia. Aplicatia se opreste.");
+                timerInterval.cancel();
+                timerLaOra.cancel();
+                timerPeriodic.cancel();
+                System.exit(0);
+            }
+        }, 10000);
+    }
+
+    /** Beep "sigur" - nu arunca exceptie daca mediul e headless (fara GUI). */
+    private static void beepSafe() {
+        try {
+            Toolkit.getDefaultToolkit().beep();
+        } catch (Exception e) {
+            // ignoram - unele medii (server, CI) nu au suport audio/GUI
+        }
+    }
+}
